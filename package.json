@@ -1,0 +1,54 @@
+{
+  "name": "gmailToSpreadsheet",
+  "version": "8.2.0",
+  "description": "Setup a local development environment for Google Apps Script with Visual Studio Code",
+  "author": "AntiDigest <flamingtribble@gmail.com>",
+  "homepage": "",
+  "license": "MIT",
+  "scripts": {
+    "watch": "webpack --watch",
+    "build": "webpack",
+    "upload": "clasp push",
+    "deploy": "npm run build && npm run upload",
+    "test": "jest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/antiDigest/gmailToSpreadsheet.git"
+  },
+  "keywords": [
+    "google-apps-script",
+    "google-workspace"
+  ],
+  "devDependencies": {
+    "@babel/core": "^7.14.0",
+    "@babel/plugin-proposal-object-rest-spread": "^7.13.8",
+    "@babel/preset-env": "^7.14.1",
+    "@google/clasp": "^2.0.1",
+    "@types/google-apps-script": "^1.0.32",
+    "babel-eslint": "^10.1.0",
+    "babel-loader": "^8.2.2",
+    "copy-webpack-plugin": "^8.1.1",
+    "cross-env": "^7.0.3",
+    "eslint": "^7.26.0",
+    "eslint-config-airbnb-base": "^14.2.1",
+    "eslint-config-labnol": "^1.0.17",
+    "eslint-config-prettier": "^8.3.0",
+    "eslint-plugin-googleappsscript": "^1.0.3",
+    "eslint-plugin-html": "^6.1.2",
+    "eslint-plugin-import": "^2.22.1",
+    "eslint-plugin-jest": "^24.3.6",
+    "eslint-plugin-prettier": "^3.4.0",
+    "eslint-plugin-react": "^7.23.2",
+    "eslint-plugin-react-hooks": "^4.2.0",
+    "eslint-webpack-plugin": "^2.5.4",
+    "gas-webpack-plugin": "^2.0.1",
+    "jest": "^26.6.3",
+    "prettier": "^2.3.0",
+    "webpack": "^5.37.0",
+    "webpack-cli": "^4.7.0"
+  },
+  "bugs": {
+    "url": "https://github.com/antiDigest/gmailToSpreadsheet/issues"
+  }
+}
