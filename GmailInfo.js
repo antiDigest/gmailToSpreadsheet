@@ -1,5 +1,7 @@
+var columns = ["Year", "Month", "Day", "DayOfWeek", "DateTime", "Time", "Amount", "Merchant", "Category", "Timeline", "Card", "Last4"]
+
 function fillSpreadsheet() {
-  getGmailData_(getGmails_(), getSpreadsheet_());
+  getGmailData_(getGmails_("label:expenses"), getSpreadsheet_());
 }
 
 function getGmailData_(threads, sheet) {
@@ -9,18 +11,21 @@ function getGmailData_(threads, sheet) {
       continue;
     }
     var rows = extractMoreInfo_(thread);
-    for(var r=0; r<rows.length; r++) { 
-      var row = rows[r];
-      sheet.appendRow(row);
-      highlightRow_(sheet, row);
-    } 
+    fillSpreadsheet_(rows, sheet);
+    sendText(rows, columns);
     // thread.markRead();
-    break;
+    deleteForever_(thread);
+    // break;
   }
 }
 
-function getGmails_() {
-  var threads = GmailApp.search("label:investing-robinhood");
+function deleteForever_(thread) {
+  thread = thread.moveToTrash();
+  Gmail.Users.Messages.remove("me", thread.getId());
+}
+
+function getGmails_(label) {
+  var threads = GmailApp.search(label);
   
   var start = binarySearch_(threads, 0, threads.length-1);
   if (start+5 < threads.length) {
@@ -28,12 +33,6 @@ function getGmails_() {
   }
 
   return threads.slice(0, start+1);
-}
-
-function getSpreadsheet_() {
-  var spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = spreadsheet.getSheetByName("Invest Log");
-  return sheet;
 }
 
 function extractMoreInfo_(thread) {
@@ -51,117 +50,47 @@ function extractMoreInfo_(thread) {
     
     var body = message.getBody();
     var bodyHtml = replaceUselessTags_(body);
-    // if (subject== "Order Placed") {
-    //   body = doGet(bodyHtml);
-    // } else if (subject == "Order Executed") {
-    //   body = doGet(bodyHtml);
-    // }
-    try{
-      body = parseHtml_(bodyHtml);
-      body = getAllText_(body);
+    body = parseHtml_(bodyHtml);
+    body = getTextList_(body);
+    body = sentenceTokenizer_(body);
 
-      body = getAllSentences_(body);
-
-      var sentenceToParse = null;
-      for (var i=0; i<body.length; i++) {
-        if (body[i].indexOf("share") > -1) {
-          sentenceToParse = body[i];
-        } else if (body[i].indexOf("$") > -1) {
-          sentenceToParse = body[i];
+    var merchant = "";
+    for (var i=0; i<body.length; i++) {
+      if (body[i].indexOf("Merchant") > -1) {
+        merchant = merchant + body[i].split("Merchant: ")[1];
+        if (merchant == "undefined" || merchant == null) {
+          merchant = body[i+2];
+        } else if (merchant.trim() == "" || isNumeric(merchant.trim().substring(0, 2))) {
+          merchant = merchant + " " + body[i+2];
         }
       }
-
-      body = body.join(" :: ");
-    } catch (Exception) {
-      body = subject;
+      else if (body[i].indexOf("Transaction Date") > -1) {
+        var transactionDate = body[i].split("Transaction Date: ")[1];
+        var transactionYear = transactionDate.split(" ")[2];
+        var transactionDay = transactionDate.split(" ")[1].split(",")[0];
+        var transactionMonth = transactionDate.split(" ")[0];
+        transactionDate = new Date(transactionYear, getMonthFromString(transactionMonth), transactionDay);
+        var dayOfWeek = String(transactionDate).split(" ")[0];
+      }
+      if (body[i].indexOf("Last 4 #:") > -1) {
+        var last4 = body[i].split("Last 4 #:")[1].split(" ")[0];
+      }
     }
+    body = body.join(" :: ");
+
+    var amountRegex = new RegExp(/(?:[\£\$\€]{1}[,\d]+.?\d*)/);
+    var amount = body.match(amountRegex)[0];
+
+    var messageDate = message.getDate();
+    var date = String(messageDate).split(" ");
+    var time= date[4];
     
-    rows.push([message.getDate(), thread.getId(), message.getId(), subject, mailFrom, sentenceToParse, body]);
+    rows.push([transactionYear, transactionMonth, transactionDay, dayOfWeek, transactionDate, time, amount, merchant, "", "", "Discover", last4, "", "", body]);
   }
   
   return rows;
 }
 
-function parseHtml_(html) {
-  var doc = XmlService.parse(html);
-  // var menu = getAllText_(doc.getRootElement()).join(" :: ");
-  // return menu;
-  return doc;
-}
-
-function highlightRow_(sheet, row) {
-  if (row[3] == row[row.length-1]) {
-    highlightRow_(sheet, row, "fc6e4e");
-  } else if (row[4].indexOf("notification") > -1) {
-    highlightRow_(sheet, row, "fcc900");
-  }
-}
-
-function highlightRow_(sheet, row, color) {
-  var sheetRow = sheet.getLastRow();
-  var sheetCol = sheet.getLastColumn();
-  var rowRange = sheet.getRange(sheetRow, 1, 1, row.length);
-  rowRange.setBackground(color);
-}
-
-function replaceUselessTags_(body) {
-  var regex = new RegExp('<!--.*-->', 'gm');
-  var formattedBody = body.replace(regex,"");
-  var bodyRegex = new RegExp(/<body[\s\S]*<\/body>/gi);
-  var bodyHtml = formattedBody.match(bodyRegex)[0];
-
-  var imgRegex = new RegExp(/<img([\s\S]*?)>/gi);
-  bodyHtml = bodyHtml.replace(imgRegex, "");
-  var brRegex = new RegExp(/<br([\s\S]*?)>/gi);
-  bodyHtml = bodyHtml.replace(brRegex, "");
-
-  bodyHtml = bodyHtml.replace(/&/g, "&amp;");
-  // Logger.log(bodyHtml);
-
-  return bodyHtml;
-}
-
-function getAllText_(element) {  
-  var data = [];
-  var descendants = element.getDescendants();
-  descendants.push(element);  
-  for(i in descendants) {
-    var elt = descendants[i].asElement();
-    try {
-      var elementText = elt.getText();
-      if (elementText != null && elementText != "") {
-        elementText = elementText.trim();
-        if (elementText != "") {
-          data.push(elementText);
-        }
-        if (elementText.indexOf("The Robinhood Team") > -1) {
-          return data;
-        }
-      }
-    } catch (TypeError) {
-      continue;
-    }
-  }
-  return data;
-}
-
-function getAllSentences_(paras) {
-
-  Logger.log(paras);
-
-  var sentences = [];
-  var sentenceRegex = new RegExp("(?<!\w\.\w.)(?<![A-Z][a-z]\.)(?<=\.|\?)\s");
-  for (var i=0; i<paras.length; i++) {
-
-    var interSentences = paras[i].split(sentenceRegex, "g");
-    interSentences.foreach(function(inter){
-      sentences.push(inter);
-    });
-  }
-
-  Logger.log(sentences);
-  return sentences;
-}
 
 function binarySearch_(threads, start, end){
   var veryEnd = end;
