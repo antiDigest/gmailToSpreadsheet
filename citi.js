@@ -8,8 +8,6 @@ function processWhenAccountIsCiti_(message, sentences, row) {
     } else if (sentences[i].indexOf("Merchant") > -1) {
       row["merchant"] = sentences[i+1].trim();
     } else if (sentences[i].indexOf("Card Ending") > -1) {
-      Logger.log(sentences[i]);
-      Logger.log(sentences[i+1]);
       row["last4"] = sentences[i+1];
     }
   }

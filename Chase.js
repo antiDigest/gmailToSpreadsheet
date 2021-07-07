@@ -18,5 +18,7 @@ function processWhenAccountIsChase_(message, sentences, row) {
   
   row["body"] = sentences.join(" :: ");
 
+  Logger.log(row);
+
   return row;
 }

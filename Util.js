@@ -12,7 +12,6 @@ function isNumeric(num){
 
 function transactionDateFromEmailMessage_(messageDate, row) {
   var date = String(messageDate).split(" ");
-  Logger.log(date);
   row["year"] = date[3];
   row["day"] = date[2];
   row["month"] = date[1];

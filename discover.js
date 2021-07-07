@@ -1,6 +1,6 @@
 // DISCOVER CARD
 
-function processWhenAccountIsDiscover_(sentences, row) {
+function processWhenAccountIsDiscover_(message, sentences, row) {
   row["merchant"] = ""
   for (var i=0; i<sentences.length; i++) {
     if (sentences[i].indexOf("Merchant") > -1) {

@@ -45,13 +45,13 @@ function extractMoreInfo_(thread) {
 
     var row = {};
     if (sender == "Discover") {
-      var sentences = askParserToParseBody_(message.getBody(), "1-800-DISCOVER");
+      var sentences = askParserToParseBody_(message.getBody(), "1-800-DISCOVER", true);
       row = processWhenAccountIsDiscover_(message, sentences, row);
     } else if (sender == "CitiDoubleCash") {
-      var sentences = askParserToParseBody_(message.getBody(), "Your Citi Team");
+      var sentences = askParserToParseBody_(message.getBody(), "Your Citi Team", true);
       row = processWhenAccountIsCiti_(message, sentences, row);
     } else if (sender == "Chase") {
-      var sentences = askParserToParseBody_(message.getBody(), "Do not reply to this Alert.");
+      var sentences = askParserToParseBody_(message.getBody(), "Do not reply to this Alert.", false);
       row = processWhenAccountIsChase_(message, sentences, row);
     }
     
@@ -73,11 +73,16 @@ function defineSender_(message) {
   return mailFrom;
 }
 
-function askParserToParseBody_(body, stoppingPhrase) {
-  var bodyHtml = replaceUselessTags_(body);
-  body = parseHtml_(bodyHtml);
-  body = getTextList_(body, stoppingPhrase);
-  body = sentenceTokenizer_(body);
+function askParserToParseBody_(body, stoppingPhrase, thisOneWillHaveTags) {
+  try {
+    body = parseHtml_(body, thisOneWillHaveTags);
+    body = getTextList_(body, stoppingPhrase);
+    body = sentenceTokenizer_(body);
+  } catch (Exception) {
+    // If the above does not work, we have a very malfuctioning html
+    // Time to go the messy route
+    body = getSentencesFromHtml(body, stoppingPhrase);
+  }
 
   return body;
 }

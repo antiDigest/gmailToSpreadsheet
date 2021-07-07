@@ -15,22 +15,24 @@ function parseGmailMessageBody_(body) {
   return body.join(" :: "), sentenceToParse;
 }
 
-function parseHtml_(html) {
-  html = replaceUselessTags_(html);
+function parseHtml_(html, thisOneWillHaveTags) {
+  html = replaceUselessTags_(html, thisOneWillHaveTags);
   var doc = XmlService.parse(html);
   return doc;
 }
 
-function replaceUselessTags_(body) {
+function replaceUselessTags_(body, thisOneWillHaveTags) {
   var regex = new RegExp('<!--.*-->', 'gm');
   var formattedBody = body.replace(regex,"");
-  var bodyRegex = new RegExp(/<body[\s\S]*<\/body>/gi);
-  var bodyHtml = formattedBody;//.match(bodyRegex)[0];
+  if (thisOneWillHaveTags) {
+    var bodyRegex = new RegExp(/<body[\s\S]*<\/body>/gi);
+    var bodyHtml = formattedBody.match(bodyRegex)[0];
 
-  var imgRegex = new RegExp(/<img([\s\S]*?)>/gi);
-  bodyHtml = bodyHtml.replace(imgRegex, "");
-  var brRegex = new RegExp(/<br([\s\S]*?)>/gi);
-  bodyHtml = bodyHtml.replace(brRegex, "");
+    var imgRegex = new RegExp(/<img([\s\S]*?)>/gi);
+    bodyHtml = bodyHtml.replace(imgRegex, "");
+    var brRegex = new RegExp(/<br([\s\S]*?)>/gi);
+    bodyHtml = bodyHtml.replace(brRegex, "");
+  }
 
   bodyHtml = bodyHtml.replace(/&/g, "&amp;");
   // Logger.log(bodyHtml);
@@ -86,4 +88,22 @@ function sentenceTokenizer_(paras) {
 
   // Logger.log(sentences);
   return sentences;
+}
+
+function getSentencesFromHtml(body, stoppingPhrase) {
+  var sentenceRegex = new RegExp(/>[^<>]+</gi);
+  var sentences = body.match(sentenceRegex);
+  var sentenceList = [];
+  for (var s=0; s<sentences.length; s++) {
+    var sentence = sentences[s].substring(1, sentences[s].length-1).trim();
+
+    if (sentence != "") {
+      sentenceList.push(sentence);
+    }
+
+    if (sentence.indexOf(stoppingPhrase) > -1) {
+      return sentenceList;
+    }
+  }
+  return sentenceList;
 }
