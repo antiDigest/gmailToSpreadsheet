@@ -5,7 +5,7 @@ function fillSpreadsheet() {
 }
 
 function fillSpreadsheetWithReplies() {
-  getGmailData_(getGmails_("label:expenses-replies"), getSpreadsheet_(), false, true);
+  getGmailData_(getGmails_("label:expenses-replies"), getSpreadsheet_(), true, true);
 }
 
 function getGmailData_(threads, sheet, deleteForever, reply) {
