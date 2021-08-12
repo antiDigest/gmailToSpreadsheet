@@ -26,3 +26,16 @@ function highlightSpreadsheetRow_(sheet, row, color) {
     var rowRange = sheet.getRange(sheetRow, 1, 1, row.length);
     rowRange.setBackground(color);
 }
+
+function getLastRowValues_(sheet) {
+  var lastRow = sheet.getLastRow();
+  return sheet.getRange(lastRow, 1, 1, sheet.getLastColumn()).getValues()[0];
+}
+
+function updateLastRowAmount_(sheet, value) {
+  Logger.log(value);
+  var lastRow = sheet.getLastRow();
+  var cell = sheet.getRange(lastRow, AMOUNTINDEX+1, 1, 1);
+  cell.setNumberFormat("$ 0.00");
+  cell.setValue(value);
+}

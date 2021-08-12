@@ -1,20 +1,28 @@
-var columns = ["Year", "Month", "Day", "DayOfWeek", "DateTime", "Time", "Amount", "Merchant", "Category", "Timeline", "Card", "Last4"]
+var columns = ["Year", "Month", "Day", "DayOfWeek", "DateTime", "Time", "Amount", "Merchant", "Category", "Timeline", "Card", "Last4", "From", "To"]
 
 function fillSpreadsheet() {
-  getGmailData_(getGmails_("label:expenses"), getSpreadsheet_());
+  getGmailData_(getGmails_("label:expenses"), getSpreadsheet_(), true, false);
 }
 
-function getGmailData_(threads, sheet) {
+function fillSpreadsheetWithReplies() {
+  getGmailData_(getGmails_("label:expenses-replies"), getSpreadsheet_(), false, true);
+}
+
+function getGmailData_(threads, sheet, deleteForever, reply) {
   for(var t=threads.length-1; t>=0; t--) {
     var thread = threads[t];
     if (!thread.isUnread()) {
       continue;
     }
-    var rows = extractMoreInfo_(thread);
-    fillSpreadsheet_(rows, sheet);
+    var rows = extractMoreInfo_(sheet, thread);
+    if (!reply) {
+      fillSpreadsheet_(rows, sheet);
+    }
     sendText(rows, columns);
     // thread.markRead();
-    deleteForever_(thread);
+    if (deleteForever) {
+      deleteForever_(thread);
+    }
     // break;
   }
 }
@@ -35,27 +43,43 @@ function getGmails_(label) {
   return threads.slice(0, start+1);
 }
 
-function extractMoreInfo_(thread) {
+function extractMoreInfo_(sheet, thread) {
   var messages = thread.getMessages();
   var rows = [];
   
   for(var m=0; m<messages.length; m++) {
     var message = messages[m];
-    var sender = defineSender_(message);
+    var paymentMethod = defineSender_(message);
 
     var row = {};
-    if (sender == "Discover") {
+    if (paymentMethod == "Discover") {
       var sentences = askParserToParseBody_(message.getBody(), "1-800-DISCOVER", true);
       row = processWhenAccountIsDiscover_(message, sentences, row);
-    } else if (sender == "CitiDoubleCash") {
+    } else if (paymentMethod == "CitiDoubleCash") {
       var sentences = askParserToParseBody_(message.getBody(), "Your Citi Team", true);
       row = processWhenAccountIsCiti_(message, sentences, row);
-    } else if (sender == "Chase") {
+    } else if (paymentMethod == "Chase") {
       var sentences = askParserToParseBody_(message.getBody(), "Do not reply to this Alert.", false);
       row = processWhenAccountIsChase_(message, sentences, row);
+    } else if (paymentMethod == "AmericanExpress") {
+      var sentences = askParserToParseBody_(message.getBody(), "*The amount above may not", false);
+      row = processWhenAccountIsAmex_(message, sentences, row);
+    } else if (paymentMethod == "Venmo") {
+      var sentences = askParserToParseBody_(message.getBody(), "Like", false);
+      row = processWhenAccountIsVenmo_(message, sentences, row);
+    } else if (paymentMethod == "Zelle") {
+      var sentences = askParserToParseBody_(message.getBody(), "Wells Fargo Online Customer Service", false);
+      row = processWhenAccountIsWellsFargo_(message, sentences, row);
+    } else if (paymentMethod == "Reply") {
+      var sentences = askParserToParseBody_(message.getBody(), "*****", true);
+      row = processWhenAccountIsText_(sheet, message, sentences, row);
     }
     
-    rows.push([row["year"], row["month"], row["day"], row["dayOfWeek"], row["date"], row["time"], row["amount"], row["merchant"], "", "", sender, row["last4"], "", "", row["body"]]);
+    if (paymentMethod == "Reply") {
+      rows.push(row); 
+    } else {
+      rows.push([row["year"], row["month"], row["day"], row["dayOfWeek"], row["date"], row["time"], row["amount"], row["merchant"], row["category"], "", paymentMethod, row["last4"], row["From"], row["To"], row["body"]]);
+    }
   }
   
   return rows;
@@ -67,8 +91,16 @@ function defineSender_(message) {
     mailFrom = "Discover";
   } else if (mailFrom.indexOf("citi") > -1) {
     mailFrom = "CitiDoubleCash";
-  } else if (mailFrom.indexOf("antriksh") > -1) {
+  } else if (mailFrom.indexOf("chase") > -1) {
     mailFrom = "Chase";
+  } else if (mailFrom.indexOf("AmericanExpress") > -1) {
+    mailFrom = "AmericanExpress";
+  } else if (mailFrom.indexOf("venmo") > -1) {
+    mailFrom = "Venmo";
+  } else if (mailFrom.indexOf("wellsfargo") > -1) {
+    mailFrom = "Zelle";
+  } else if (mailFrom.indexOf("4698793964") > -1) {
+    mailFrom = "Reply";
   }
   return mailFrom;
 }

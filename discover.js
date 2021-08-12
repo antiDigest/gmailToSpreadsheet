@@ -13,7 +13,7 @@ function processWhenAccountIsDiscover_(message, sentences, row) {
     }
 
     if (sentences[i].indexOf("Last 4 #:") > -1) {
-      row["last4"] = sentences[i].split("Last 4 #:")[1].split(" ")[0];
+      row["last4"] = sentences[i].split("Last 4 #:")[1].split(" ")[0].split(";")[1];
     }
   }
 
