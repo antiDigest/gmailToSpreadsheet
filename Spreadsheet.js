@@ -1,3 +1,8 @@
+var AMOUNTINDEX = 6;
+var DATEINDEX = 4;
+var CARDINDEX = 10;
+
+
 function getSpreadsheet_() {
     var spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
     var sheet = spreadsheet.getSheetByName("Spend Email Log");
@@ -38,4 +43,18 @@ function updateLastRowAmount_(sheet, value) {
   var cell = sheet.getRange(lastRow, AMOUNTINDEX+1, 1, 1);
   cell.setNumberFormat("$ 0.00");
   cell.setValue(value);
+}
+
+function getLastMonthRowValues_(sheet) {
+  var lastRow = sheet.getLastRow();
+  var data = sheet.getRange(2, 1, lastRow-2, sheet.getLastColumn()).getValues();
+  var date = new Date();
+  date = new Date(date.getDate(), date.getMonth(), date.getFullYear());
+
+  // date.addDays(-30);
+  var finalData = data.filter(function(item) {
+    return new Date(item[DATEINDEX]) >= date
+  });
+  Logger.log(finalData);
+  return finalData;
 }

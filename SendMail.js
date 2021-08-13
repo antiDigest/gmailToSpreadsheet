@@ -9,6 +9,10 @@ function sendText(rows, columns) {
   }
 }
 
+function sendText(subject, body) {
+  GmailApp.sendEmail(myPhone, subject, body);
+}
+
 function generateBody_(row, columns) {
   var body = "";
   for (var i=0; i<columns.length; i++) {
